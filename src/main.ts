@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import userRoutes from './routes/userRoutes';
 import webhooksRoutes from './routes/webhooksRoutes';
 
 const port = process.env.PORT || 4000;
@@ -11,16 +10,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-
-app.get('/api', (req, res) => {
-  res.send({ message: 'Hello API' });
-});
-
-app.get('/api/health', (req, res) => {
-  res.status(200).send({ message: 'OK' });
-});
-
-app.use("/api/users", userRoutes);
+// Routes
 app.use("/api/webhooks", webhooksRoutes);
 
 app.listen(port, () => {
