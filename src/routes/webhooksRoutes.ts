@@ -2,8 +2,8 @@ import getSizeInBytes from '@/utils/getSizeInBytes';
 import prisma from '../../utils/prisma';
 import express from 'express';
 import { Resend } from 'resend';
-import { EmailAddresses } from '@/utils/emailAddresses';
 import TranscriptionCompletedEmail from '../components/emails/TranscriptionCompletedEmail';
+import EmailAddresses from '@/utils/emailAddresses';
 const router = express.Router();
 const QUALSEARCH_AWS_AMPLIFY_URL = process.env.QUALSEARCH_AWS_AMPLIFY_URL;
 const QUALSEARCH_VERCEL_URL = process.env.QUALSEARCH_VERCEL_URL;
@@ -127,10 +127,11 @@ router.post("/deepgram", async (req, res) => {
 
             // Create the link to the transcribed file
             const linkToTranscribedFile = `${QUALSEARCH_VERCEL_URL}/teams/${teamWithUsers?.id}/projects/${fileWithThisRequestId.file.projectId}/files/${fileWithThisRequestId.file.id}`;
+            console.log("Link to transcribed file", linkToTranscribedFile)
 
             try {
-                console.log("Sending email(s)...");
                 if (teamWithUsers) {
+                    console.log("Team has users, starting to send emails...")
                     // Send the invitation email(s).
                     const resend = new Resend(process.env.RESEND_API_KEY);
                     const emailPromises = teamWithUsers.users.map(async (user) => {

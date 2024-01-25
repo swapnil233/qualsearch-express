@@ -1,6 +1,6 @@
 const domain = process.env.EMAIL_DOMAIN || "qualsearch.io";
 
-export const EmailAddresses = {
+const EmailAddresses = {
     Noreply: `noreply@${domain}`,
     Support: `support@${domain}`,
     Sales: `sales@${domain}`,
@@ -9,3 +9,5 @@ export const EmailAddresses = {
     Billing: `billing@${domain}`,
     Security: `security@${domain}`,
 };
+
+export default EmailAddresses;
