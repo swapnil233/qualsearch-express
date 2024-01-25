@@ -1,0 +1,361 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?   @unique
+  accounts      Account[]
+  sessions      Session[]
+
+  // m-n -> User can belong to many teams
+  teams Team[]
+
+  // 1-n User can create many teams
+  createdTeams Team[] @relation("CreatedTeam")
+
+  // 1-n -> User can create many invitations
+  invitationsSent     Invitation[] @relation("InvitationsSent")
+  invitationsRecieved Invitation[] @relation("InvitationsReceived")
+  Speaker             Speaker[]
+  Note                Note[]
+  Tag                 Tag[]
+  teamsMembership     TeamMember[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  description String?
+
+  // m-n -> Team can have many users
+  users User[]
+
+  // 1-n -> Team can have many projects
+  projects Project[]
+
+  // 1-n -> Team can have many files
+  files File[]
+
+  // 1-n -> Team can be created by 1 user
+  createdBy       User         @relation("CreatedTeam", fields: [createdByUserId], references: [id])
+  createdByUserId String
+  Invitation      Invitation[]
+  members         TeamMember[]
+
+  // Frequently fetching teams based on id
+  @@index([id])
+}
+
+model TeamMember {
+  userId String
+  teamId String
+  role   Role   @default(MEMBER)
+  user   User   @relation(fields: [userId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
+}
+
+model Invitation {
+  id           String           @id @default(cuid())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  invitedEmail String           @db.VarChar(320)
+  status       InvitationStatus @default(PENDING)
+  teamId       String
+  team         Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  role         Role             @default(MEMBER)
+
+  // 1-n -> Invitation can be created by 1 user
+  invitedByUserId String?
+  invitedByUser   User?   @relation("InvitationsSent", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  // 1-n -> Invitation can be accepted by 1 user
+  invitedUser   User?   @relation("InvitationsReceived", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedUserId String?
+
+  @@unique([invitedEmail, teamId])
+  @@index([status])
+}
+
+// Files belong to projects. A user can belong in a team that has many projects. A project can have many files.
+model Project {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  description String?
+
+  // 1-n -> Project can belong to 1 team
+  Team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId String
+
+  // 1-n -> Project can have many videos
+  files File[]
+
+  clips Clip[]
+  notes Note[]
+  tags  Tag[]
+
+  status ProjectStatus @default(ACTIVE)
+
+  // Frequently fetching projects based on team id
+  @@index([teamId])
+}
+
+model File {
+  id                      String     @id @default(cuid())
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  name                    String
+  description             String?
+  participantName         String
+  participantOrganization String
+  dateConducted           DateTime
+  uri                     String
+  type                    FileType
+  status                  FileStatus @default(PROCESSING)
+
+  // 1-n: Video can belong to 1 project
+  Project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
+  // 1-n: files belong to a team. A team can have many files.
+  Team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId String
+
+  // 1-1: a file can have one transcript
+  transcript Transcript?
+
+  // 1-1: a File can have one Deepgram transcript request ID
+  transcriptRequestId DeepgramTranscriptRequest?
+
+  Speaker Speaker[]
+  Clip    Clip[]
+  Note    Note[]
+
+  // Frequently fetching files based on project id
+  @@index([projectId])
+}
+
+model DeepgramTranscriptRequest {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  request_id String   @unique
+
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId String @unique
+}
+
+model Transcript {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  confidence       Float
+  words            Json
+  topics           Json?
+  entities         Json?
+  summaries        Json?
+  paragraphs       Json
+  transcriptString String
+
+  // 1-1: a Transcript can have one TranscriptMetadata.
+  metadata TranscriptMetadata?
+
+  // 1-1: a Transcript belongs to one File. A File can have one Transcript.
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId String @unique
+
+  // 1-1: a Transcript can have 1 summary.
+  summary   Summary? @relation(fields: [summaryId], references: [id])
+  summaryId String?  @unique
+}
+
+model Summary {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  content   String
+
+  // 1-1: a Summary belongs to 1 Transcript.
+  Transcript Transcript?
+}
+
+model TranscriptMetadata {
+  id         String   @id @default(cuid())
+  created    String
+  tags       String[]
+  models     String[]
+  sha256     String
+  channels   Int
+  duration   Float
+  model_info Json
+  request_id String
+
+  // 1-1: a Transcript can have one TranscriptMetadata
+  transcript   Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  transcriptId String     @unique
+}
+
+// A file may have speakers. A speaker belongs to one file.
+model Speaker {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String?
+  email     String?
+
+  // A speaker can also be a user in the team
+  teamMemberId String?
+  user         User?   @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+
+  // 1-n -> Speaker can belong to 1 file
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId String
+}
+
+model Clip {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  name        String
+  description String?
+  start       Float
+  end         Float
+  uri         String
+  type        FileType
+  transcript  Json?
+
+  // 1-n -> Clip can belong to 1 file
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId String
+
+  // 1-n -> Clip can belong to 1 project
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+}
+
+model Note {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  text           String
+  transcriptText String
+  start          Float
+  end            Float
+
+  // 1-n -> Note can belong to 1 file
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId String
+
+  // 1-n -> Note can belong to 1 project
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
+  // m-n -> A note can have many tags
+  tags Tag[]
+
+  // 1-1 -> A note is created by a user
+  createdBy       User   @relation(fields: [createdByUserId], references: [id])
+  createdByUserId String
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+
+  // m-n -> A tag can belong to many notes
+  notes Note[]
+
+  // 1-1 -> A tag is created by a user
+  createdBy       User   @relation(fields: [createdByUserId], references: [id])
+  createdByUserId String
+
+  // 1-n -> A tag must belong to a project
+  Project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum Role {
+  GUEST
+  VIEWER
+  MEMBER
+  ADMIN
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum FileType {
+  VIDEO
+  AUDIO
+  POWERPOINT
+  PDF
+  WORD
+  EXCEL
+  IMAGE
+  OTHER
+}
+
+enum FileStatus {
+  PROCESSING
+  ERROR
+  COMPLETED
+}
