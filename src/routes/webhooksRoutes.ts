@@ -16,11 +16,13 @@ router.post("/deepgram", async (req, res) => {
     if (req.method !== "POST")
         return res.status(405).send("[405] Method Not Allowed");
 
+    console.log("Request body", req.body)
+
     const { request_id } = req.body.metadata;
     if (!request_id)
         return res.status(400).send("[400] Bad Request: No request_id present");
 
-    console.log("Deepgram request ID present. Proceeding...")
+    console.log("Deepgram request ID present. Proceeding...");
 
     const dgResponse = req.body.results.channels[0].alternatives[0];
     const metadata = req.body.metadata;
