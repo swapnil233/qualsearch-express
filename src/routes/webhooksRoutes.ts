@@ -5,7 +5,7 @@ import { Resend } from 'resend';
 import TranscriptionCompletedEmail from '../components/emails/TranscriptionCompletedEmail';
 import EmailAddresses from '@/utils/emailAddresses';
 const router = express.Router();
-const QUALSEARCH_AWS_AMPLIFY_URL = process.env.QUALSEARCH_AWS_AMPLIFY_URL;
+const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL;
 const QUALSEARCH_VERCEL_URL = process.env.QUALSEARCH_VERCEL_URL;
 
 router.post("/deepgram", async (req, res) => {
@@ -98,7 +98,7 @@ router.post("/deepgram", async (req, res) => {
 
             // Create embeddings for the new transcript
             console.log("Creating embeddings for the new transcript...");
-            await fetch(`${QUALSEARCH_AWS_AMPLIFY_URL}/api/embeddings`, {
+            await fetch(`${EXPRESS_BACKEND_URL}/api/embeddings`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
