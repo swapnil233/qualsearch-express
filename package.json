@@ -10,6 +10,7 @@
   },
   "private": true,
   "dependencies": {
+    "@dqbd/tiktoken": "^1.0.7",
     "@pinecone-database/pinecone": "^1.1.2",
     "@prisma/client": "^5.8.1",
     "@react-email/button": "^0.0.13",
