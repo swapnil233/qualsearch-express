@@ -3,6 +3,7 @@ import cors from 'cors';
 import webhooksRoutes from './routes/webhooksRoutes';
 import winston from "winston";
 import expressWinston from "express-winston";
+import embeddingsRoutes from './routes/embeddingsRoutes';
 
 const port = process.env.PORT || 4000;
 const app = express();
@@ -33,6 +34,7 @@ app.get("/status", (req: Request, res: Response) => {
 
 // Routes
 app.use("/api/webhooks", webhooksRoutes);
+app.use("/api/embeddings", embeddingsRoutes);
 
 // 404 
 app.use((req, res) => {
