@@ -16,6 +16,7 @@ router.post("/", async (req: Request, res: Response) => {
 
         // Validate that transcriptId is provided.
         if (!transcriptId) {
+            console.error("Transcript ID is required.");
             return res.status(HttpStatus.BadRequest).send(ErrorMessages.BadRequest);
         }
 
@@ -23,6 +24,7 @@ router.post("/", async (req: Request, res: Response) => {
         const transcript = await getTranscriptById(transcriptId as string);
 
         if (!transcript) {
+            console.error("Transcript not found.");
             return res.status(HttpStatus.NotFound).send(ErrorMessages.NotFound);
         }
 
@@ -52,6 +54,7 @@ router.post("/", async (req: Request, res: Response) => {
             }
         );
 
+        console.log("Embedding successful.");
         return res.status(HttpStatus.Ok).send({ message: "Embedding successful." });
     } catch (error) {
         console.log(error);
