@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import webhooksRoutes from './routes/webhooksRoutes';
@@ -9,10 +11,18 @@ import summariesRoutes from './routes/summariesRoutes';
 const port = process.env.PORT || 4000;
 const app = express();
 
+const allowedOrigins = ['http://localhost:3003', process.env.QUALSEARCH_VERCEL_URL];
 app.use(cors({
-  origin: ['http://localhost:3003', process.env.QUALSEARCH_VERCEL_URL as string],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   optionsSuccessStatus: 200
 }));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(
