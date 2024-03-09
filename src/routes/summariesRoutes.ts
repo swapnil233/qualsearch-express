@@ -17,10 +17,12 @@ router.get("/", async (req: Request, res: Response) => {
     try {
         // Retrieve transcriptId from the query parameters.
         const transcriptId = req.query.transcriptId as string;
+        console.log("Transcript ID: ", transcriptId)
 
         // Validate that transcriptId is provided.
         if (!transcriptId) {
-            return res.status(HttpStatus.BadRequest).send(ErrorMessages.BadRequest);
+            console.error("Transcript ID is required.");
+            return res.status(HttpStatus.BadRequest).send("A valid transcript ID is required.");
         }
 
         const transcript = await prisma.transcript.findUniqueOrThrow({
@@ -32,10 +34,13 @@ router.get("/", async (req: Request, res: Response) => {
             },
         });
 
-        if (!transcript || !transcript.summary)
-            return res.status(HttpStatus.NotFound).send(ErrorMessages.NotFound);
+        if (!transcript || !transcript.summary) {
+            console.error(`Transcript with the ID "${transcriptId}" not found.`);
+            return res.status(HttpStatus.NotFound).send(`Transcript with the ID "${transcriptId}" not found.`)
+        }
 
         // Return the summary
+        console.log("Summary: ", transcript.summary);
         return res.status(HttpStatus.Ok).json(transcript.summary);
     } catch (error) {
         console.log(error);
@@ -60,7 +65,7 @@ router.post("/", async (req: Request, res: Response) => {
         const transcript = await getTranscriptById(transcriptId as string);
 
         if (!transcript) {
-            console.error("Transcript not found.");
+            console.error(`Transcript with the ID "${transcriptId}" not found.`);
             return res.status(HttpStatus.NotFound).send(ErrorMessages.NotFound);
         }
 
