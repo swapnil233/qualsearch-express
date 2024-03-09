@@ -11,16 +11,18 @@ import summariesRoutes from './routes/summariesRoutes';
 const port = process.env.PORT || 4000;
 const app = express();
 
-const allowedOrigins = ['http://localhost:3003', process.env.QUALSEARCH_VERCEL_URL];
+const allowedOrigins = ['http://localhost:3003', "https://www.qualsearch.io"];
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`Allowed CORS for: ${origin}`);
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log(`Blocked CORS for: ${origin}`);
+      callback(new Error('Not allowed by CORS'), false);
     }
   },
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
 app.use(express.json({ limit: '50mb' }));
