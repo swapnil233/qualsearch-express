@@ -10,7 +10,7 @@ const port = process.env.PORT || 4000;
 const app = express();
 
 app.use(cors({
-  origin: process.env.QUALSEARCH_VERCEL_URL,
+  origin: ['http://localhost:3003', process.env.QUALSEARCH_VERCEL_URL as string],
   optionsSuccessStatus: 200
 }));
 app.use(express.json({ limit: '50mb' }));
