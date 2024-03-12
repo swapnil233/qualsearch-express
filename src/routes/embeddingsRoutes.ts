@@ -1,12 +1,12 @@
-import { ErrorMessages } from "@/constants/ErrorMessages";
-import { HttpStatus } from "@/constants/HttpStatus";
+import { ErrorMessages } from "@/src/constants/ErrorMessages";
+import { HttpStatus } from "@/src/constants/HttpStatus";
 import { Request, Response, Router } from "express";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { getTranscriptById } from "@/infrastructure/transcript.service";
-import pinecone from "@/utils/pinecone";
-import prisma from "@/utils/prisma";
+import { getTranscriptById } from "@/src/infrastructure/transcript.service";
+import pinecone from "@/src/utils/pinecone";
+import prisma from "@/src/utils/prisma";
 import { Document } from "langchain/document";
 
 const router = Router();

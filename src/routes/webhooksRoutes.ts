@@ -1,9 +1,9 @@
-import getSizeInBytes from '@/utils/getSizeInBytes';
-import prisma from '../../utils/prisma';
+import getSizeInBytes from '@/src/utils/getSizeInBytes';
+import prisma from '../utils/prisma';
 import express from 'express';
 import { Resend } from 'resend';
 import TranscriptionCompletedEmail from '../components/emails/TranscriptionCompletedEmail';
-import EmailAddresses from '@/utils/emailAddresses';
+import EmailAddresses from '@/src/utils/emailAddresses';
 const router = express.Router();
 const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL;
 const QUALSEARCH_VERCEL_URL = process.env.QUALSEARCH_VERCEL_URL;

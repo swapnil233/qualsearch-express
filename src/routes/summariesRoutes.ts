@@ -1,13 +1,13 @@
-import { ErrorMessages } from "@/constants/ErrorMessages";
-import { HttpStatus } from "@/constants/HttpStatus";
-import { getTranscriptById } from "@/infrastructure/transcript.service";
+import { ErrorMessages } from "@/src/constants/ErrorMessages";
+import { HttpStatus } from "@/src/constants/HttpStatus";
+import { getTranscriptById } from "@/src/infrastructure/transcript.service";
 import express, { Request, Response } from "express";
 import { OpenAI } from "langchain/llms/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { ChatPromptTemplate, PromptTemplate } from "langchain/prompts";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { LLMChain, loadSummarizationChain } from "langchain/chains";
-import prisma from "@/utils/prisma";
+import prisma from "@/src/utils/prisma";
 import { get_encoding } from "@dqbd/tiktoken";
 const encoding = get_encoding("cl100k_base");
 

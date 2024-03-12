@@ -1,4 +1,4 @@
-import prisma from "@/utils/prisma";
+import prisma from "@/src/utils/prisma";
 import { Transcript } from "@prisma/client";
 
 /**
