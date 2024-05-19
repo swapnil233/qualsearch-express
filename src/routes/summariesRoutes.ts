@@ -76,7 +76,7 @@ router.post("/", async (req: Request, res: Response) => {
         });
 
         const model = new OpenAI({
-            modelName: "gpt-4-1106-preview",
+            modelName: "gpt-4o",
             temperature: 0.3,
         });
 
@@ -85,7 +85,7 @@ router.post("/", async (req: Request, res: Response) => {
 
         let aiSummary = "";
 
-        // gpt-4-1106-preview has a 128,000 token limit. Setting the limit to 126,000 to be safe.
+        // gpt-4o has a 128,000 token limit. Setting the limit to 126,000 to be safe.
         if (tokenCount < 126_000) {
             const template = `Given text is a transcript of a UX team conducting usability tests. Produce a summary including three sections, styled exactly as such:
           
