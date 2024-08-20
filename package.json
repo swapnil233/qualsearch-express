@@ -12,7 +12,7 @@
   "dependencies": {
     "@dqbd/tiktoken": "^1.0.7",
     "@pinecone-database/pinecone": "^1.1.2",
-    "@prisma/client": "^5.8.1",
+    "@prisma/client": "^5.18.0",
     "@react-email/button": "^0.0.13",
     "@react-email/components": "^0.0.14",
     "@react-email/html": "^0.0.7",
@@ -22,7 +22,6 @@
     "express": "~4.18.1",
     "express-winston": "^4.2.0",
     "langchain": "^0.0.197-rc.1",
-    "prisma": "^5.8.1",
     "react-email": "^2.0.0",
     "resend": "^3.1.0",
     "tslib": "^2.3.0"
@@ -50,6 +49,7 @@
     "jest-environment-node": "^29.4.1",
     "nx": "17.2.8",
     "prettier": "^2.6.2",
+    "prisma": "^5.18.0",
     "ts-jest": "^29.1.0",
     "ts-node": "10.9.1",
     "typescript": "~5.2.2"
