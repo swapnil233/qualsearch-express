@@ -1,11 +1,6 @@
 import prisma from "@/src/utils/prisma";
 import { Transcript } from "@prisma/client";
 
-/**
- * Gets a transcript given an ID
- * @param id id of transcript
- * @returns a Transcript or null
- */
 export const getTranscriptById = async (
   id: string
 ): Promise<Transcript | null> => {

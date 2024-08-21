@@ -1,6 +1,6 @@
 import { ErrorMessages } from "@/src/constants/ErrorMessages";
 import { HttpStatus } from "@/src/constants/HttpStatus";
-import { getTranscriptById } from "@/src/infrastructure/transcript.service";
+import { getTranscriptById } from "@/src/infrastructure/services/transcript.service";
 import express, { Request, Response } from "express";
 import { OpenAI } from "langchain/llms/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";

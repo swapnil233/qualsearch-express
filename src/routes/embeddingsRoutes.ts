@@ -4,7 +4,7 @@ import { Request, Response, Router } from "express";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { getTranscriptById } from "@/src/infrastructure/transcript.service";
+import { getTranscriptById } from "@/src/infrastructure/services/transcript.service";
 import pinecone from "@/src/utils/pinecone";
 import prisma from "@/src/utils/prisma";
 import { Document } from "langchain/document";
