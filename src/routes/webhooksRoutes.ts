@@ -4,6 +4,7 @@ import express from 'express';
 import { Resend } from 'resend';
 import TranscriptionCompletedEmail from '../components/emails/TranscriptionCompletedEmail';
 import EmailAddresses from '@/src/utils/emailAddresses';
+import { getFileByDeepgramRequestId } from '../infrastructure/services/file.service';
 const router = express.Router();
 const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL;
 const QUALSEARCH_VERCEL_URL = process.env.QUALSEARCH_VERCEL_URL;
@@ -16,13 +17,11 @@ router.post("/deepgram", async (req, res) => {
     if (req.method !== "POST")
         return res.status(405).send("[405] Method Not Allowed");
 
-    console.log("Request body", req.body)
-
     const { request_id } = req.body.metadata;
     if (!request_id)
         return res.status(400).send("[400] Bad Request: No request_id present");
 
-    console.log("Deepgram request ID present. Proceeding...");
+    console.log("\u{2705} Deepgram request ID found. Proceeding...");
 
     const dgResponse = req.body.results.channels[0].alternatives[0];
     const metadata = req.body.metadata;
@@ -33,21 +32,13 @@ router.post("/deepgram", async (req, res) => {
         // Find the file that has this request ID
         console.log(`Searching for file with request_id: ${request_id}`);
 
-        const fileWithThisRequestId =
-            await prisma.deepgramTranscriptRequest.findUnique({
-                where: {
-                    request_id: request_id,
-                },
-                select: {
-                    file: true,
-                },
-            });
+        const file = await getFileByDeepgramRequestId(request_id);
 
-        if (!fileWithThisRequestId?.file) {
-            return res.status(404).send("[404] Not Found: File not found");
+        if (!file) {
+            return res.status(404).send("File not found");
         }
 
-        console.log(`File with ID "${fileWithThisRequestId.file.id}" found.`)
+        console.log(`File with ID "${file.id}" found.`)
 
         const transcriptData = {
             confidence: dgResponse.confidence,
@@ -71,7 +62,7 @@ router.post("/deepgram", async (req, res) => {
             },
             file: {
                 connect: {
-                    id: fileWithThisRequestId.file.id,
+                    id: file.id,
                 },
             },
         };
@@ -84,7 +75,7 @@ router.post("/deepgram", async (req, res) => {
 
                 prisma.file.update({
                     where: {
-                        id: fileWithThisRequestId.file.id,
+                        id: file.id,
                     },
                     data: {
                         status: "COMPLETED",
@@ -112,7 +103,7 @@ router.post("/deepgram", async (req, res) => {
             // Get the team and users associated with this file
             const teamWithUsers = await prisma.team.findUnique({
                 where: {
-                    id: fileWithThisRequestId.file.teamId,
+                    id: file.teamId,
                 },
                 select: {
                     id: true,
@@ -126,8 +117,7 @@ router.post("/deepgram", async (req, res) => {
             });
 
             // Create the link to the transcribed file
-            const linkToTranscribedFile = `${QUALSEARCH_VERCEL_URL}/teams/${teamWithUsers?.id}/projects/${fileWithThisRequestId.file.projectId}/files/${fileWithThisRequestId.file.id}`;
-            console.log("Link to transcribed file", linkToTranscribedFile)
+            const linkToTranscribedFile = `${QUALSEARCH_VERCEL_URL}/teams/${teamWithUsers?.id}/projects/${file.projectId}/files/${file.id}`;
 
             try {
                 if (teamWithUsers) {
@@ -138,10 +128,10 @@ router.post("/deepgram", async (req, res) => {
                         await resend.emails.send({
                             from: EmailAddresses.Noreply,
                             to: [user.email as string],
-                            subject: `Transcription completed for ${fileWithThisRequestId.file.name}`,
+                            subject: `Transcription completed for ${file.name}`,
                             react: TranscriptionCompletedEmail({
                                 userName: user.name as string,
-                                fileName: fileWithThisRequestId.file.name,
+                                fileName: file.name,
                                 linkToTranscribedFile: linkToTranscribedFile,
                             }),
                         });
@@ -157,7 +147,7 @@ router.post("/deepgram", async (req, res) => {
             }
 
             return res.status(200).send({
-                fileWithThisRequestId: fileWithThisRequestId.file.id,
+                fileWithThisRequestId: file.id,
                 newTranscriptId: newTranscript.id,
                 updatedFileStatus: updatedFile.status,
             });
@@ -167,7 +157,7 @@ router.post("/deepgram", async (req, res) => {
             // Update the file status to ERROR
             await prisma.file.update({
                 where: {
-                    id: fileWithThisRequestId.file.id,
+                    id: file.id,
                 },
                 data: {
                     status: "ERROR",
