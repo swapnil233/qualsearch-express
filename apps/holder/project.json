@@ -1,7 +1,7 @@
 {
   "name": "holder",
-  "$schema": "node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "src",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/holder/src",
   "projectType": "application",
   "targets": {
     "build": {
@@ -13,9 +13,9 @@
         "outputPath": "dist/holder",
         "format": ["cjs"],
         "bundle": false,
-        "main": "src/main.ts",
-        "tsConfig": "tsconfig.app.json",
-        "assets": ["src/assets"],
+        "main": "apps/holder/src/main.ts",
+        "tsConfig": "apps/holder/tsconfig.app.json",
+        "assets": ["apps/holder/src/assets"],
         "generatePackageJson": true,
         "esbuildOptions": {
           "sourcemap": true,
@@ -55,14 +55,14 @@
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["./src"]
+        "lintFilePatterns": ["apps/holder/src"]
       }
     },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectName}"],
       "options": {
-        "jestConfig": "jest.config.ts"
+        "jestConfig": "apps/holder/jest.config.app.ts"
       }
     }
   },

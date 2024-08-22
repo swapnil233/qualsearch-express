@@ -1,5 +1,5 @@
-import prisma from "@/src/utils/prisma";
-import { Transcript } from "@prisma/client";
+import prisma from '@/src/utils/prisma';
+import { Transcript } from '@prisma/client';
 
 export const getTranscriptById = async (
   id: string

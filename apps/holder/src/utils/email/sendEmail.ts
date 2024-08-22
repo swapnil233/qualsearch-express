@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
-import type SMTPTransport from "nodemailer/lib/smtp-transport";
+import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 const smtpConfig: SMTPTransport.Options = {
   host: process.env.SMTP_HOST,
