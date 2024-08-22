@@ -11,7 +11,8 @@ import {
   Section,
   Tailwind,
   Text,
-} from "@react-email/components";
+} from '@react-email/components';
+import * as React from 'react';
 
 interface TranscriptionCompletedEmailProps {
   userName: string;
@@ -52,7 +53,7 @@ export const TranscriptionCompletedEmail = ({
               </Button>
             </Section>
             <Text className="text-black text-[14px] leading-[24px]">
-              or copy and paste this URL into your browser:{" "}
+              or copy and paste this URL into your browser:{' '}
               <Link
                 href={linkToTranscribedFile}
                 className="text-blue-600 no-underline"
@@ -64,7 +65,7 @@ export const TranscriptionCompletedEmail = ({
             <Text className="text-[#666666] text-[12px] leading-[24px]">
               This is a system-generated email, please do not reply directly to
               this email address. If you have any questions, please contact us
-              at{" "}
+              at{' '}
               <Link
                 href="mailto:help@qualsearch.io"
                 className="text-blue-600 no-underline"
