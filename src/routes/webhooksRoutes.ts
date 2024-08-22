@@ -1,44 +1,46 @@
-import getSizeInBytes from '@/src/utils/getSizeInBytes';
 import prisma from '../utils/prisma';
 import express from 'express';
 import { Resend } from 'resend';
 import TranscriptionCompletedEmail from '../components/emails/TranscriptionCompletedEmail';
 import EmailAddresses from '@/src/utils/emailAddresses';
-import { getFileByDeepgramRequestId } from '../infrastructure/services/file.service';
+import { getFileByDeepgramRequestId, lockFileForProcessing } from '../infrastructure/services/file.service';
 const router = express.Router();
-const EXPRESS_BACKEND_URL = process.env.EXPRESS_BACKEND_URL;
 const QUALSEARCH_VERCEL_URL = process.env.QUALSEARCH_VERCEL_URL;
+import { File as PrismaFile } from '@prisma/client';  // Rename the import
 
 router.post("/deepgram", async (req, res) => {
-    console.log(`Running in environment: ${process.env.NODE_ENV}`);
-    console.log("webhookHandler started.");
+    console.log("Deepgram webhook received");
 
     // Only allow POST
-    if (req.method !== "POST")
-        return res.status(405).send("[405] Method Not Allowed");
+    if (req.method !== "POST") {
+        return res.status(405).send("Method Not Allowed");
+    }
 
     const { request_id } = req.body.metadata;
-    if (!request_id)
-        return res.status(400).send("[400] Bad Request: No request_id present");
+    if (!request_id) {
+        return res.status(400).send("Bad Request: No request_id present");
+    }
 
-    console.log("\u{2705} Deepgram request ID found. Proceeding...");
-
-    const dgResponse = req.body.results.channels[0].alternatives[0];
-    const metadata = req.body.metadata;
-
-    console.log(`Request body size: ${getSizeInBytes(req.body)} bytes`);
+    let file: PrismaFile | null = null;
 
     try {
-        // Find the file that has this request ID
-        console.log(`Searching for file with request_id: ${request_id}`);
-
-        const file = await getFileByDeepgramRequestId(request_id);
+        file = await getFileByDeepgramRequestId(request_id);
 
         if (!file) {
+            console.log(`File not found for request ${request_id}`);
             return res.status(404).send("File not found");
         }
 
-        console.log(`File with ID "${file.id}" found.`)
+        if (file.status === 'COMPLETED') {
+            console.log(`File ${file.id} already processed`);
+            return res.status(200).send("Already processed");
+        }
+
+        // Lock the file for processing
+        await lockFileForProcessing(file.id);
+
+        const dgResponse = req.body.results.channels[0].alternatives[0];
+        const metadata = req.body.metadata;
 
         const transcriptData = {
             confidence: dgResponse.confidence,
@@ -68,110 +70,89 @@ router.post("/deepgram", async (req, res) => {
         };
 
         try {
-            const [newTranscript, updatedFile] = await prisma.$transaction([
-                prisma.transcript.create({
-                    data: transcriptData,
-                }),
+            const [updatedFile] = await prisma.$transaction(async (prisma) => {
+                const existingTranscript = await prisma.transcript.findUnique({
+                    where: { fileId: file?.id }
+                });
 
-                prisma.file.update({
-                    where: {
-                        id: file.id,
-                    },
-                    data: {
-                        status: "COMPLETED",
-                    },
-                }),
-            ]);
+                if (!existingTranscript) {
+                    await prisma.transcript.create({
+                        data: transcriptData,
+                    });
+                }
 
-            console.log(
-                `Transcript created with ID: ${newTranscript.id}. File status updated to ${updatedFile.status}.`
-            );
+                const updatedFile = await prisma.file.update({
+                    where: { id: file?.id },
+                    data: { status: "COMPLETED" },
+                });
+
+                return [updatedFile];
+            });
 
             // Create embeddings for the new transcript
-            console.log("Creating embeddings for the new transcript...");
-            await fetch(`${EXPRESS_BACKEND_URL}/api/embeddings`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    transcriptId: newTranscript.id,
-                }),
-            });
-            console.log("Embeddings created.");
+            // console.log("Creating embeddings for the new transcript...");
+            // await fetch(`${EXPRESS_BACKEND_URL}/api/embeddings`, {
+            //     method: "POST",
+            //     headers: {
+            //         "Content-Type": "application/json",
+            //     },
+            //     body: JSON.stringify({
+            //         transcriptId: newTranscript.id,
+            //     }),
+            // });
+            // console.log("Embeddings created.");
 
             // Get the team and users associated with this file
+            // Send email notification
+
             const teamWithUsers = await prisma.team.findUnique({
-                where: {
-                    id: file.teamId,
-                },
-                select: {
-                    id: true,
-                    users: {
-                        select: {
-                            name: true,
-                            email: true,
-                        },
-                    },
-                },
+                where: { id: file.teamId },
+                include: { users: true },
             });
 
-            // Create the link to the transcribed file
-            const linkToTranscribedFile = `${QUALSEARCH_VERCEL_URL}/teams/${teamWithUsers?.id}/projects/${file.projectId}/files/${file.id}`;
-
-            try {
-                if (teamWithUsers) {
-                    console.log("Team has users, starting to send emails...")
-                    // Send the invitation email(s).
-                    const resend = new Resend(process.env.RESEND_API_KEY);
-                    const emailPromises = teamWithUsers.users.map(async (user) => {
-                        await resend.emails.send({
-                            from: EmailAddresses.Noreply,
-                            to: [user.email as string],
-                            subject: `Transcription completed for ${file.name}`,
-                            react: TranscriptionCompletedEmail({
-                                userName: user.name as string,
-                                fileName: file.name,
-                                linkToTranscribedFile: linkToTranscribedFile,
-                            }),
-                        });
-
-                        console.log(`Email sent to ${user.email}`);
+            if (teamWithUsers) {
+                const linkToTranscribedFile = `${QUALSEARCH_VERCEL_URL}/teams/${teamWithUsers.id}/projects/${file.projectId}/files/${file.id}`;
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                for (const user of teamWithUsers.users) {
+                    await resend.emails.send({
+                        from: EmailAddresses.Noreply,
+                        to: user.email as string,
+                        subject: `Transcription completed for ${file.name}`,
+                        react: TranscriptionCompletedEmail({
+                            userName: user.name as string,
+                            fileName: file.name,
+                            linkToTranscribedFile: linkToTranscribedFile,
+                        }),
                     });
-
-                    // Await all email sending promises and handle failures.
-                    await Promise.allSettled(emailPromises);
                 }
-            } catch (error) {
-                console.error("Failed to send email:", error);
             }
 
             return res.status(200).send({
                 fileWithThisRequestId: file.id,
-                newTranscriptId: newTranscript.id,
                 updatedFileStatus: updatedFile.status,
             });
         } catch (transactionError) {
             console.error("Transaction failed:", transactionError);
-
-            // Update the file status to ERROR
-            await prisma.file.update({
-                where: {
-                    id: file.id,
-                },
-                data: {
-                    status: "ERROR",
-                },
-            });
-
-            throw transactionError; // Propagate the error to the outer catch
+            throw transactionError;
         }
     } catch (error: unknown) {
+        console.error(error);
+
+        // Attempt to update file status to ERROR
+        if (file) {
+            try {
+                await prisma.file.update({
+                    where: { id: file.id },
+                    data: { status: 'ERROR' },
+                });
+            } catch (updateError) {
+                console.error("Failed to update file status to ERROR:", updateError);
+            }
+        }
+
         if (error instanceof Error) {
-            console.error(error);
             res.status(500).send(`[500] Internal Server Error: ${error.message}`);
         } else {
-            console.error(error);
             res.status(500).send("[500] Internal Server Error");
         }
     }
