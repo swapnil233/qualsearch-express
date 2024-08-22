@@ -1,12 +1,10 @@
 import prisma from '../utils/prisma';
 import express from 'express';
-import { Resend } from 'resend';
-import TranscriptionCompletedEmail from '../components/emails/TranscriptionCompletedEmail';
-import EmailAddresses from '@/src/utils/emailAddresses';
 import { getFileByDeepgramRequestId, lockFileForProcessing } from '../infrastructure/services/file.service';
 const router = express.Router();
 const QUALSEARCH_VERCEL_URL = process.env.QUALSEARCH_VERCEL_URL;
 import { File as PrismaFile } from '@prisma/client';  // Rename the import
+import { sendTranscriptionCompleteNotificationEmail } from '../infrastructure/services/email.service';
 
 router.post("/deepgram", async (req, res) => {
     console.log("Deepgram webhook received");
@@ -112,18 +110,8 @@ router.post("/deepgram", async (req, res) => {
 
             if (teamWithUsers) {
                 const linkToTranscribedFile = `${QUALSEARCH_VERCEL_URL}/teams/${teamWithUsers.id}/projects/${file.projectId}/files/${file.id}`;
-                const resend = new Resend(process.env.RESEND_API_KEY);
                 for (const user of teamWithUsers.users) {
-                    await resend.emails.send({
-                        from: EmailAddresses.Noreply,
-                        to: user.email as string,
-                        subject: `Transcription completed for ${file.name}`,
-                        react: TranscriptionCompletedEmail({
-                            userName: user.name as string,
-                            fileName: file.name,
-                            linkToTranscribedFile: linkToTranscribedFile,
-                        }),
-                    });
+                    await sendTranscriptionCompleteNotificationEmail(linkToTranscribedFile, user.name as string, file.name, user.email as string);
                 }
             }
 

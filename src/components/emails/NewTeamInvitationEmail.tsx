@@ -22,10 +22,10 @@ interface VercelInviteUserEmailProps {
 }
 
 export const NewTeamInvitationEmail = ({
-  invitedByName = 'bukinoshita',
-  invitedByEmail = 'bukinoshita@example.com',
-  teamName = 'Acme Inc.',
-  inviteLink = `${QUALSEARCH_VERCEL_URL}/teams`,
+  invitedByName,
+  invitedByEmail,
+  teamName,
+  inviteLink,
 }: VercelInviteUserEmailProps) => {
   const previewText = `Join ${invitedByName} on QualSearch`;
 
@@ -73,5 +73,12 @@ export const NewTeamInvitationEmail = ({
     </Html>
   );
 };
+
+NewTeamInvitationEmail.PreviewProps = {
+  invitedByName: 'John Doe',
+  invitedByEmail: 'john@doe.com',
+  teamName: 'Team Name',
+  inviteLink: `${QUALSEARCH_VERCEL_URL}/accept-invite`,
+} as VercelInviteUserEmailProps;
 
 export default NewTeamInvitationEmail;
