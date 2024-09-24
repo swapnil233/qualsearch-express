@@ -10,11 +10,13 @@
   },
   "private": true,
   "dependencies": {
+    "@ai-sdk/openai": "^0.0.62",
     "@dqbd/tiktoken": "^1.0.7",
     "@pinecone-database/pinecone": "^1.1.2",
     "@prisma/client": "^5.18.0",
     "@react-email/components": "^0.0.22",
     "@react-email/render": "^0.0.17",
+    "ai": "^3.4.2",
     "axios": "^1.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -25,7 +27,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-email": "^2.1.6",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@nx/esbuild": "17.2.8",
