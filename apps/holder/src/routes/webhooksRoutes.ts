@@ -1,13 +1,10 @@
-import prisma from '../utils/prisma';
+import prisma from '@/src/utils/prisma';
 import express from 'express';
-import {
-  getFileByDeepgramRequestId,
-  lockFileForProcessing,
-} from '../infrastructure/services/file.service';
 const router = express.Router();
 const QUALSEARCH_VERCEL_URL = process.env.QUALSEARCH_VERCEL_URL;
 import { File as PrismaFile } from '@prisma/client'; // Rename the import
 import { sendTranscriptionCompleteNotificationEmail } from '../infrastructure/services/email.service';
+import { getFileByDeepgramRequestId, lockFileForProcessing } from '../infrastructure/services/file.service';
 
 router.post('/deepgram', async (req, res) => {
   console.log('Deepgram webhook received');
